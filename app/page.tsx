@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 // --- Data ---
 const initialJapaneseWords = [
@@ -316,13 +316,13 @@ const initialJapaneseWords = [
 
 // --- Helper Components ---
 
-const SvgIcon = ({ d, className = "w-6 h-6" }) => (
+const SvgIcon = ({ d, className = "w-6 h-6" }: { d: string, className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
         <path strokeLinecap="round" strokeLinejoin="round" d={d} />
     </svg>
 );
 
-const NavButton = ({ children, onClick, active }) => (
+const NavButton = ({ children, onClick, active }: { children: React.ReactNode, onClick: () => void, active: boolean }) => (
     <button
         onClick={onClick}
         className={`flex items-center justify-center gap-2 px-4 py-3 font-semibold transition-all duration-300 rounded-lg ${
@@ -336,7 +336,7 @@ const NavButton = ({ children, onClick, active }) => (
 );
 
 // --- Modal Component for Adding Words ---
-const AddWordModal = ({ onAddWord, onClose }) => {
+const AddWordModal = ({ onAddWord, onClose }: { onAddWord: (word: any) => void, onClose: () => void }) => {
     const [formData, setFormData] = useState({
         japanese: '',
         romaji: '',
@@ -346,12 +346,12 @@ const AddWordModal = ({ onAddWord, onClose }) => {
         category: 'Custom'
     });
 
-    const handleChange = (e) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.japanese || !formData.romaji || !formData.english) {
             console.error('Please fill in at least the Japanese, Romaji, and English fields.');
@@ -373,7 +373,7 @@ const AddWordModal = ({ onAddWord, onClose }) => {
                     <input type="text" name="romaji" value={formData.romaji} onChange={handleChange} placeholder="Romaji (e.g., Neko)" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none" />
                     <input type="text" name="pronunciation" value={formData.pronunciation} onChange={handleChange} placeholder="Pronunciation (e.g., neh-koh)" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none" />
                     <input type="text" name="english" value={formData.english} onChange={handleChange} placeholder="English (e.g., Cat)" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none" />
-                    <textarea name="mnemonic" value={formData.mnemonic} onChange={handleChange} placeholder="Mnemonic (e.g., Your neck is full of cats)" rows="3" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"></textarea>
+                    <textarea name="mnemonic" value={formData.mnemonic} onChange={handleChange} placeholder="Mnemonic (e.g., Your neck is full of cats)" rows={3} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:outline-none"></textarea>
                     <div className="flex justify-end gap-4 pt-4">
                         <button type="button" onClick={onClose} className="px-6 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300">Cancel</button>
                         <button type="submit" className="px-6 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600">Add Word</button>
@@ -387,7 +387,7 @@ const AddWordModal = ({ onAddWord, onClose }) => {
 
 // --- Main Components ---
 
-const StudyBar = ({ count, onStartStudy }) => {
+const StudyBar = ({ count, onStartStudy }: { count: number, onStartStudy: (page: string) => void }) => {
     if (count === 0) return null;
     return (
         <div className="fixed bottom-0 left-0 right-0 bg-white shadow-2xl z-20 p-4 transform transition-transform duration-300 translate-y-0">
@@ -411,7 +411,7 @@ const StudyBar = ({ count, onStartStudy }) => {
     );
 };
 
-const WordListPage = ({ words, selectedWords, onWordSelect }) => {
+const WordListPage = ({ words, selectedWords, onWordSelect }: { words: any[], selectedWords: string[], onWordSelect: (japaneseWord: string) => void }) => {
     return (
         <div className="space-y-4 pb-24">
             <div className="flex justify-between items-center">
@@ -448,7 +448,7 @@ const WordListPage = ({ words, selectedWords, onWordSelect }) => {
 };
 
 
-const FlashcardPage = ({ words, onExitStudy }) => {
+const FlashcardPage = ({ words, onExitStudy }: { words: any[], onExitStudy: (() => void) | null }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isFlipped, setIsFlipped] = useState(false);
 
@@ -516,15 +516,15 @@ const FlashcardPage = ({ words, onExitStudy }) => {
 };
 
 
-const QuizPage = ({ words, allWords, onExitStudy }) => {
-    const [questions, setQuestions] = useState([]);
+const QuizPage = ({ words, allWords, onExitStudy }: { words: any[], allWords: any[], onExitStudy: (() => void) | null }) => {
+    const [questions, setQuestions] = useState<any[]>([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [score, setScore] = useState(0);
     const [selectedAnswer, setSelectedAnswer] = useState(null);
     const [isAnswered, setIsAnswered] = useState(false);
     const [quizFinished, setQuizFinished] = useState(false);
 
-    const generateQuestions = () => {
+    const generateQuestions = useCallback(() => {
         if (!words || words.length === 0) {
             setQuestions([]);
             return;
@@ -570,13 +570,13 @@ const QuizPage = ({ words, allWords, onExitStudy }) => {
         setSelectedAnswer(null);
         setIsAnswered(false);
         setQuizFinished(false);
-    };
+    }, [words, allWords]);
 
     useEffect(() => {
         generateQuestions();
-    }, [words]);
+    }, [generateQuestions]);
 
-    const handleAnswer = (option) => {
+    const handleAnswer = (option: any) => {
         if (isAnswered) return;
         
         setSelectedAnswer(option.japanese);
@@ -648,7 +648,7 @@ const QuizPage = ({ words, allWords, onExitStudy }) => {
                     <p className="text-4xl font-bold text-gray-800">{currentQuestion.question}</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {currentQuestion.options.map((option, index) => {
+                    {currentQuestion.options.map((option: any, index: number) => {
                         const isCorrect = option.japanese === currentQuestion.answer;
                         let buttonClass = 'bg-white text-gray-800 hover:bg-red-100 border border-gray-300';
                         
@@ -709,10 +709,10 @@ export default function App() {
     const [activePage, setActivePage] = useState('home');
     const [words, setWords] = useState(initialJapaneseWords);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedWords, setSelectedWords] = useState([]);
-    const [studyList, setStudyList] = useState(null);
+    const [selectedWords, setSelectedWords] = useState<string[]>([]);
+    const [studyList, setStudyList] = useState<any[] | null>(null);
 
-    const handleWordSelect = (japaneseWord) => {
+    const handleWordSelect = (japaneseWord: string) => {
         setSelectedWords(prevSelected => {
             if (prevSelected.includes(japaneseWord)) {
                 return prevSelected.filter(w => w !== japaneseWord);
@@ -722,7 +722,7 @@ export default function App() {
         });
     };
 
-    const handleStartStudy = (page) => {
+    const handleStartStudy = (page: string) => {
         const newStudyList = words.filter(word => selectedWords.includes(word.japanese));
         setStudyList(newStudyList);
         setActivePage(page);
@@ -734,7 +734,7 @@ export default function App() {
         setActivePage('home');
     };
 
-    const handleNavigation = (page) => {
+    const handleNavigation = (page: string) => {
         if (page === 'home') {
             setStudyList(null); 
         } else if (studyList === null) {
@@ -745,11 +745,11 @@ export default function App() {
         setActivePage(page);
     };
 
-    const handleAddWord = (newWord) => {
+    const handleAddWord = (newWord: any) => {
         setWords(prevWords => [newWord, ...prevWords]);
     };
 
-    const handleAddWordAndCloseModal = (newWord) => {
+    const handleAddWordAndCloseModal = (newWord: any) => {
         handleAddWord(newWord);
         setIsModalOpen(false);
     };
