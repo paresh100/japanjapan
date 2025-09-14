@@ -1,8 +1,26 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 
+// --- Type Definitions ---
+type Word = {
+    japanese: string;
+    romaji: string;
+    pronunciation: string;
+    english: string;
+    mnemonic: string;
+    category: string;
+};
+
+type QuizQuestion = {
+    question: string;
+    options: Word[];
+    answer: string;
+    mnemonic: string;
+};
+
+
 // --- Data ---
-const initialJapaneseWords = [
+const initialJapaneseWords: Word[] = [
     // Greetings (6)
     {
         japanese: "こんにちは",
@@ -336,7 +354,7 @@ const NavButton = ({ children, onClick, active }: { children: React.ReactNode, o
 );
 
 // --- Modal Component for Adding Words ---
-const AddWordModal = ({ onAddWord, onClose }: { onAddWord: (word: any) => void, onClose: () => void }) => {
+const AddWordModal = ({ onAddWord, onClose }: { onAddWord: (word: Word) => void, onClose: () => void }) => {
     const [formData, setFormData] = useState({
         japanese: '',
         romaji: '',
@@ -411,7 +429,7 @@ const StudyBar = ({ count, onStartStudy }: { count: number, onStartStudy: (page:
     );
 };
 
-const WordListPage = ({ words, selectedWords, onWordSelect }: { words: any[], selectedWords: string[], onWordSelect: (japaneseWord: string) => void }) => {
+const WordListPage = ({ words, selectedWords, onWordSelect }: { words: Word[], selectedWords: string[], onWordSelect: (japaneseWord: string) => void }) => {
     return (
         <div className="space-y-4 pb-24">
             <div className="flex justify-between items-center">
@@ -448,7 +466,7 @@ const WordListPage = ({ words, selectedWords, onWordSelect }: { words: any[], se
 };
 
 
-const FlashcardPage = ({ words, onExitStudy }: { words: any[], onExitStudy: (() => void) | null }) => {
+const FlashcardPage = ({ words, onExitStudy }: { words: Word[], onExitStudy: (() => void) | null }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isFlipped, setIsFlipped] = useState(false);
 
@@ -516,11 +534,11 @@ const FlashcardPage = ({ words, onExitStudy }: { words: any[], onExitStudy: (() 
 };
 
 
-const QuizPage = ({ words, allWords, onExitStudy }: { words: any[], allWords: any[], onExitStudy: (() => void) | null }) => {
-    const [questions, setQuestions] = useState<any[]>([]);
+const QuizPage = ({ words, allWords, onExitStudy }: { words: Word[], allWords: Word[], onExitStudy: (() => void) | null }) => {
+    const [questions, setQuestions] = useState<QuizQuestion[]>([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [score, setScore] = useState(0);
-    const [selectedAnswer, setSelectedAnswer] = useState(null);
+    const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [isAnswered, setIsAnswered] = useState(false);
     const [quizFinished, setQuizFinished] = useState(false);
 
@@ -537,25 +555,12 @@ const QuizPage = ({ words, allWords, onExitStudy }: { words: any[], allWords: an
         const shuffledStudyWords = [...words].sort(() => 0.5 - Math.random());
         
         const quizQuestions = shuffledStudyWords.map(correctWord => {
-            const incorrectOptions = [...allWords]
+            const incorrectOptions: Word[] = [...allWords]
                 .filter(word => word.japanese !== correctWord.japanese)
                 .sort(() => 0.5 - Math.random())
-                .slice(0, 3)
-                .map(word => ({ 
-                    japanese: word.japanese, 
-                    english: word.english,
-                    romaji: word.romaji,
-                    pronunciation: word.pronunciation
-                }));
+                .slice(0, 3);
             
-            const correctOption = {
-                japanese: correctWord.japanese,
-                english: correctWord.english,
-                romaji: correctWord.romaji,
-                pronunciation: correctWord.pronunciation
-            };
-            
-            const options = [correctOption, ...incorrectOptions].sort(() => 0.5 - Math.random());
+            const options = [correctWord, ...incorrectOptions].sort(() => 0.5 - Math.random());
             
             return {
                 question: correctWord.english,
@@ -576,7 +581,7 @@ const QuizPage = ({ words, allWords, onExitStudy }: { words: any[], allWords: an
         generateQuestions();
     }, [generateQuestions]);
 
-    const handleAnswer = (option: any) => {
+    const handleAnswer = (option: Word) => {
         if (isAnswered) return;
         
         setSelectedAnswer(option.japanese);
@@ -648,7 +653,7 @@ const QuizPage = ({ words, allWords, onExitStudy }: { words: any[], allWords: an
                     <p className="text-4xl font-bold text-gray-800">{currentQuestion.question}</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {currentQuestion.options.map((option: any, index: number) => {
+                    {currentQuestion.options.map((option: Word, index: number) => {
                         const isCorrect = option.japanese === currentQuestion.answer;
                         let buttonClass = 'bg-white text-gray-800 hover:bg-red-100 border border-gray-300';
                         
@@ -710,7 +715,7 @@ export default function App() {
     const [words, setWords] = useState(initialJapaneseWords);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedWords, setSelectedWords] = useState<string[]>([]);
-    const [studyList, setStudyList] = useState<any[] | null>(null);
+    const [studyList, setStudyList] = useState<Word[] | null>(null);
 
     const handleWordSelect = (japaneseWord: string) => {
         setSelectedWords(prevSelected => {
@@ -745,11 +750,11 @@ export default function App() {
         setActivePage(page);
     };
 
-    const handleAddWord = (newWord: any) => {
+    const handleAddWord = (newWord: Word) => {
         setWords(prevWords => [newWord, ...prevWords]);
     };
 
-    const handleAddWordAndCloseModal = (newWord: any) => {
+    const handleAddWordAndCloseModal = (newWord: Word) => {
         handleAddWord(newWord);
         setIsModalOpen(false);
     };
@@ -833,3 +838,4 @@ export default function App() {
         </>
     );
 }
+
