@@ -429,7 +429,7 @@ const StudyBar = ({ count, onStartStudy }: { count: number, onStartStudy: (page:
     );
 };
 
-const WordListPage = ({ words, selectedWords, onWordSelect }: { words: Word[], selectedWords: string[], onWordSelect: (japaneseWord: string) => void }) => {
+const WordListPage = ({ words, selectedWords, onWordSelect, handleSpeak }: { words: Word[], selectedWords: string[], onWordSelect: (japaneseWord: string) => void, handleSpeak: (text: string) => void }) => {
     return (
         <div className="space-y-4 pb-24">
             <div className="flex justify-between items-center">
@@ -447,13 +447,23 @@ const WordListPage = ({ words, selectedWords, onWordSelect }: { words: Word[], s
                             onClick={() => onWordSelect(word.japanese)}
                             className={`p-5 bg-white rounded-xl shadow-md transition-all duration-300 cursor-pointer relative overflow-hidden ${isSelected ? 'ring-2 ring-red-500 scale-105' : 'hover:shadow-xl hover:-translate-y-1'}`}
                         >
+                             <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSpeak(word.japanese);
+                                }}
+                                className="absolute top-2 left-2 text-gray-400 hover:text-red-500 transition-colors"
+                                title="Speak"
+                            >
+                                <SvgIcon d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+                            </button>
                             <div className={`absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${isSelected ? 'bg-red-500 border-red-500' : 'border-gray-300'}`}>
                                 {isSelected && <SvgIcon d="M4.5 12.75l6 6 9-13.5" className="w-4 h-4 text-white" />}
                             </div>
-                            <p className="text-2xl font-semibold text-red-500">{word.japanese}</p>
-                            <p className="text-lg text-gray-700">{word.romaji}</p>
-                            <p className="text-md text-gray-500 italic">{word.pronunciation}</p>
-                            <p className="mt-2 text-lg font-medium text-gray-800">{word.english}</p>
+                            <p className="text-2xl font-semibold text-red-500 text-center mt-6">{word.japanese}</p>
+                            <p className="text-lg text-gray-700 text-center">{word.romaji}</p>
+                            <p className="text-md text-gray-500 italic text-center">{word.pronunciation}</p>
+                            <p className="mt-2 text-lg font-medium text-gray-800 text-center">{word.english}</p>
                             <div className="mt-3 pt-3 border-t border-gray-200">
                               <p className="text-sm text-gray-600"><span className="font-bold">Mnemonic:</span> {word.mnemonic}</p>
                             </div>
@@ -466,7 +476,7 @@ const WordListPage = ({ words, selectedWords, onWordSelect }: { words: Word[], s
 };
 
 
-const FlashcardPage = ({ words, onExitStudy }: { words: Word[], onExitStudy: (() => void) | null }) => {
+const FlashcardPage = ({ words, onExitStudy, handleSpeak }: { words: Word[], onExitStudy: (() => void) | null, handleSpeak: (text: string) => void }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isFlipped, setIsFlipped] = useState(false);
 
@@ -515,6 +525,16 @@ const FlashcardPage = ({ words, onExitStudy }: { words: Word[], onExitStudy: (()
 
                     {/* Back of the card */}
                     <div className="absolute w-full h-full backface-hidden rotate-y-180 bg-red-500 text-white rounded-2xl shadow-xl cursor-pointer p-6 flex flex-col justify-center items-center text-center">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleSpeak(currentWord.japanese);
+                            }}
+                            className="absolute top-4 right-4 text-white opacity-70 hover:opacity-100 transition-opacity"
+                            title="Speak"
+                        >
+                            <SvgIcon d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+                        </button>
                         <p className="text-4xl font-bold mb-2">{currentWord.japanese}</p>
                         <p className="text-2xl font-semibold">{currentWord.romaji}</p>
                         <p className="italic mb-4">({currentWord.pronunciation})</p>
@@ -717,6 +737,17 @@ export default function App() {
     const [selectedWords, setSelectedWords] = useState<string[]>([]);
     const [studyList, setStudyList] = useState<Word[] | null>(null);
 
+    const handleSpeak = (text: string) => {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ja-JP';
+            utterance.rate = 0.6; // Even slower speech rate
+            window.speechSynthesis.speak(utterance);
+        } else {
+            console.error('Speech synthesis not supported in this browser.');
+        }
+    };
+
     const handleWordSelect = (japaneseWord: string) => {
         setSelectedWords(prevSelected => {
             if (prevSelected.includes(japaneseWord)) {
@@ -765,13 +796,13 @@ export default function App() {
 
         switch (activePage) {
             case 'home':
-                return <WordListPage words={words} selectedWords={selectedWords} onWordSelect={handleWordSelect} />;
+                return <WordListPage words={words} selectedWords={selectedWords} onWordSelect={handleWordSelect} handleSpeak={handleSpeak} />;
             case 'flashcards':
-                return <FlashcardPage words={wordsForComponent} onExitStudy={isStudying ? handleExitStudy : null} />;
+                return <FlashcardPage words={wordsForComponent} onExitStudy={isStudying ? handleExitStudy : null} handleSpeak={handleSpeak} />;
             case 'quiz':
                 return <QuizPage words={wordsForComponent} allWords={words} onExitStudy={isStudying ? handleExitStudy : null} />;
             default:
-                return <WordListPage words={words} selectedWords={selectedWords} onWordSelect={handleWordSelect} />;
+                return <WordListPage words={words} selectedWords={selectedWords} onWordSelect={handleWordSelect} handleSpeak={handleSpeak} />;
         }
     };
     
